@@ -1,29 +1,32 @@
-use sqlx::{Row, types::chrono::{DateTime, Utc}};
-
 mod inner;
 mod outer;
+
+use axum::{Router, routing::get};
+
+use tower_http::cors::CorsLayer;
+
+use crate::{
+    inner::{controllers::product_controller, structures::service_structure},
+    outer::database::connection,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
    
-    // let user_rows = sqlx::query("Select * from users")
-    //     .fetch_all(&mut connection)
-    //     .await
-    //     .unwrap();
-
-    // for row in user_rows {
-    //     let id: u64 = row.try_get("id").unwrap();
-    //     let name: &str = row.try_get("name").unwrap();
-    //     let email: &str = row.try_get("email").unwrap();
-    //     let verified: DateTime<Utc> = row.try_get("email_verified_at").unwrap_or(Utc::now());
-    //     let password: &str = row.try_get("password").unwrap();
-    //     let remember: &str = row.try_get("remember_token").unwrap_or("Nothing to see");
-    //     let created_at: DateTime<Utc> = row.try_get("created_at").unwrap();
-    //     let updated_at: DateTime<Utc> = row.try_get("updated_at").unwrap();
-    //     let store_id: i32 = row.try_get("id_store").unwrap();
-    //     println!("Users {},{},{},{},{},{},{},{},{}",id,name,email,verified,password,remember,created_at,updated_at,store_id);
-    // }
-
+    let state_application = std::sync::Arc::new(service_structure::StateService {
+        database: connection::up_connection().await.unwrap(),
+    });
     print!("tester");
+    let cors = CorsLayer::new().allow_headers([
+        axum::http::header::AUTHORIZATION,
+        axum::http::header::ACCEPT,
+        axum::http::header::CONTENT_TYPE,
+    ]);
+    let application : Router = Router::new()
+        .route("/", get(product_controller::hello_world))
+        .with_state(state_application)
+        .layer(cors);
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:9091").await.unwrap();
+    axum::serve(listener, application).await.unwrap();
     Ok(())
 }

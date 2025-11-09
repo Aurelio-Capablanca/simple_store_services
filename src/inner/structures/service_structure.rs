@@ -1,8 +1,8 @@
-use sqlx::MySqlConnection;
+use sqlx::{MySqlPool};
 
 // System Required
-pub struct state_service {  
-    database: MySqlConnection
+pub struct StateService {  
+    pub database: MySqlPool
 }
 
 
