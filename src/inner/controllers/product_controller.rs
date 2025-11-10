@@ -1,7 +1,10 @@
 use std::{sync::Arc, vec};
 
-use crate::inner::structures::service_structure::StateService;
-use axum::{extract::State, response::Json};
+use crate::inner::structures::service_structure::{AuthenticatedUser, StateService};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Json},
+};
 use sqlx::{
     Row,
     types::chrono::{DateTime, Utc},
@@ -34,6 +37,29 @@ pub async fn tester_secured(State(state): State<Arc<StateService>>) -> Json<Vec<
         return Json(vec!["No Result Test".to_string()]);
     }
     Json(fomatter)
+}
+
+pub async fn test_identities(
+    State(state): State<Arc<StateService>>,
+    AuthenticatedUser { id: user_id }: AuthenticatedUser,
+) -> Json<Vec<String>> {
+    let connection = &state.database;
+    let user = sqlx::query("SELECT * FROM users where id = ?")
+        .bind(user_id)
+        .fetch_one(connection)
+        .await
+        .unwrap();
+    let mut formatted: Vec<String> = Vec::new();
+
+    let id: u64 = user.try_get("id").unwrap();
+    let name: &str = user.try_get("name").unwrap();
+    formatted.push(format!("User {}: {}", id, name));
+
+    if formatted.is_empty() {
+        Json(vec!["No Result".to_string()])
+    } else {
+        Json(formatted)
+    }
 }
 
 pub async fn hello_world() -> &'static str {

@@ -1,16 +1,18 @@
 use axum::{
     body::Body,
+    extract::FromRequestParts,
     http::{Request, Response, StatusCode},
     middleware::Next,
 };
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
-use crate::inner::structures::service_structure;
+use crate::inner::structures::service_structure::{self, ClaimsJWT};
+use crate::service_structure::AuthenticatedUser;
 
 pub async fn jwt_middleware(
     mut request: Request<Body>,
     next: Next,
-) -> Result<Response<Body>, StatusCode> {   
+) -> Result<Response<Body>, StatusCode> {
     let auth_headers = request
         .headers()
         .get("Authorization")
@@ -40,5 +42,23 @@ pub async fn jwt_middleware(
             print!("Trapped in error!");
             Err(StatusCode::UNAUTHORIZED)
         }
+    }
+}
+
+impl<S> FromRequestParts<S> for AuthenticatedUser
+where
+    S: Send + Sync,
+{
+    type Rejection = axum::http::StatusCode;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let claims = parts
+            .extensions
+            .get::<ClaimsJWT>()
+            .ok_or(axum::http::StatusCode::UNAUTHORIZED)?;
+        Ok(AuthenticatedUser { id: claims.sub })
     }
 }

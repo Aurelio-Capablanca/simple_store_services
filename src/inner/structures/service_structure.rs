@@ -7,10 +7,14 @@ pub struct StateService {
     //add current User found
 }
 
+pub struct AuthenticatedUser {
+    pub id : u64
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClaimsJWT {
     iss: String,
-    sub: u64,
+    pub sub: u64,
     exp: u64,
     iat: u64,
 }

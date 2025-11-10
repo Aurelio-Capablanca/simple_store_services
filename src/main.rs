@@ -9,7 +9,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::{
     inner::{controllers::product_controller, structures::service_structure::{self, StateService}},
-    outer::{database::connection, security::jwt_checker::{self}},
+    outer::{database::connection, security::jwt_middleware::{self}},
 };
 
 #[tokio::main]
@@ -30,7 +30,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let private_routes : Router<Arc<StateService>> = Router::new()
     .route("/test-access", get(product_controller::tester_secured))
-    .route_layer(middleware::from_fn(jwt_checker::jwt_middleware));
+    .route("/test-identity", get(product_controller::test_identities))
+    .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware));
 
     let application : Router = Router::new()
         .merge(public_routes)

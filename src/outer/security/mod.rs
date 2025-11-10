@@ -1,1 +1,1 @@
-pub mod jwt_checker;
+pub mod jwt_middleware;
