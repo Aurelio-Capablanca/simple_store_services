@@ -1,13 +1,18 @@
-use sqlx::{MySqlPool};
+use serde::{Deserialize, Serialize};
+use sqlx::MySqlPool;
 
 // System Required
-pub struct StateService {  
-    pub database: MySqlPool
+pub struct StateService {
+    pub database: MySqlPool,
+    //add current User found
 }
 
-pub struct ClaimsJWT{
-    
-    exp: u64
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClaimsJWT {
+    iss: String,
+    sub: u64,
+    exp: u64,
+    iat: u64,
 }
 
-//Business Structs 
+//Business Structs

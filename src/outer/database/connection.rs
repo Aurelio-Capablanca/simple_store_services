@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use sqlx::{Connection, MySqlConnection, MySqlPool, mysql::MySqlPoolOptions};
+use sqlx::{MySqlPool, mysql::MySqlPoolOptions};
 
 
 pub async fn up_connection() -> Result<MySqlPool, Box<dyn std::error::Error>>{

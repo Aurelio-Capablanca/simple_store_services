@@ -5,10 +5,11 @@ edition = "2024"
 
 [dependencies]
 axum = "0.8.6"
+hex = "0.4.3"
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "macros", "postgres", "uuid", "chrono", "mysql"] }
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread"] }
 tower = { version = "0.5.2", features = ["full", "tokio"] }
-tower-http = { version = "0.6.6", features = ["cors"] }
+tower-http = { version = "0.6.6", features = ["auth", "cors", "trace"] }

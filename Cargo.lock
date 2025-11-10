@@ -1492,6 +1492,7 @@ name = "simple_store_services"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "hex",
  "jsonwebtoken",
  "serde",
  "serde_json",
@@ -1944,12 +1945,16 @@ version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adc82fd73de2a9722ac5da747f12383d2bfdb93591ee6c58486e0097890f05f2"
 dependencies = [
+ "base64",
  "bitflags",
  "bytes",
  "http",
+ "http-body",
+ "mime",
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
