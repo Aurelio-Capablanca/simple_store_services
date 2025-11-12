@@ -3,14 +3,14 @@ use std::{sync::Arc, vec};
 use crate::inner::structures::service_structure::{AuthenticatedUser, StateService};
 use axum::{
     extract::State,
-    response::{IntoResponse, Json},
+    response::{Json},
 };
 use sqlx::{
     Row,
     types::chrono::{DateTime, Utc},
 };
 
-pub async fn tester_secured(State(state): State<Arc<StateService>>) -> Json<Vec<String>> {
+pub async fn tester_secured(State(state): State<Arc<StateService>>) ->  Json<Vec<String>> {
     let connection = &state.database;
     let user_rows = sqlx::query("Select * from users")
         .fetch_all(connection)
@@ -36,7 +36,7 @@ pub async fn tester_secured(State(state): State<Arc<StateService>>) -> Json<Vec<
     if fomatter.is_empty() {
         return Json(vec!["No Result Test".to_string()]);
     }
-    Json(fomatter)
+    Json(fomatter)    
 }
 
 pub async fn test_identities(
