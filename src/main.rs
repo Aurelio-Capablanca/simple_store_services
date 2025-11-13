@@ -1,8 +1,11 @@
 mod inner;
 mod outer;
 
+use axum::{
+    Router, middleware,
+    routing::{get, post},
+};
 use std::sync::Arc;
-use axum::{Router, middleware, routing::{get, post}};
 use tower_http::cors::CorsLayer;
 
 use crate::{
@@ -28,19 +31,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         axum::http::header::CONTENT_TYPE,
     ]);
 
-    let public_routes: Router<Arc<StateService>> =
+    let public_routes =
         Router::new().route("/", get(product_controller::hello_world));
 
-    let private_routes: Router<Arc<StateService>> = Router::new()
+    let private_routes = Router::new()
         .route("/test-access", get(product_controller::tester_secured))
         .route("/test-identity", get(product_controller::test_identities))
-        .route("/load-products", post(product_controller::load_products_controller))
-        .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware));
+        .route(
+            "/load-products",
+            post(product_controller::load_products_controller),            
+        )
+        .route("/get-categories", get(product_controller::get_categories_controller))
+        .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
+        .with_state(state_application);
 
     let application: Router = Router::new()
         .merge(public_routes)
         .nest("/api", private_routes)
-        .with_state(state_application)
         .layer(cors);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:9091")
         .await

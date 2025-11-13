@@ -1,3 +1,4 @@
+use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     MySql, MySqlPool, Pool, types::chrono::{DateTime, Local, NaiveDateTime, Utc}
@@ -7,6 +8,21 @@ use sqlx::{
 pub struct StateService {
     pub database: Pool<MySql>
 }
+
+#[derive(Serialize, Debug)]
+pub struct GeneralResponses<T> {
+    pub message: Option<String>,
+    pub dataset: Option<T>,
+    pub status: Option<i32>,
+    pub error: Option<String>
+}
+
+impl<T: serde::Serialize> IntoResponse for GeneralResponses<T> {
+    fn into_response(self) -> axum::response::Response {
+        Json(self).into_response()
+    }
+}
+
 
 pub struct AuthenticatedUser {
     pub id: u64,
@@ -88,3 +104,10 @@ pub struct LoadProduct{
 }
 
 
+//Response Payloads
+
+#[derive(Serialize)]
+pub struct Categories{
+    pub id_category: i64,
+    pub category: String
+}

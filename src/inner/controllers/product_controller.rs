@@ -1,10 +1,11 @@
 use std::{sync::Arc, vec};
 
 use crate::inner::services::product_service;
-use crate::inner::structures::service_structure::{AuthenticatedUser, LoadProduct, StateService};
+use crate::inner::structures::service_structure::{
+    AuthenticatedUser, Categories, GeneralResponses, LoadProduct, StateService,
+};
+use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
-
-use axum::Json as DeserializationJson;
 
 use sqlx::{
     Row,
@@ -55,7 +56,7 @@ pub async fn test_identities(
     let id: u64 = user.try_get("id").unwrap();
     let name: &str = user.try_get("name").unwrap();
     formatted.push(format!("User {}: {}", id, name));
-    
+
     if formatted.is_empty() {
         Json(vec!["No Result".to_string()])
     } else {
@@ -68,12 +69,62 @@ pub async fn hello_world() -> &'static str {
 }
 
 //Action Controllers
-
 pub async fn load_products_controller(
     State(state): State<Arc<StateService>>,
-    Json(products): DeserializationJson<LoadProduct>,
-) {
-    println!("Content Recieved : {:?}",products);
-    product_service::load_products(state, products).await;
+    Json(products): Json<LoadProduct>,
+) -> impl IntoResponse {
+    println!("Content Recieved : {:?}", products);
+    let response = product_service::load_products(state, products).await;
+    let done = match response {
+        Ok(res) => res,
+        Err(err) => {
+            eprintln!("{}", err);
+            "".to_string()
+        }
+    };
+    Json(done)
+}
 
+#[axum::debug_handler]
+pub async fn get_categories_controller(
+    State(state): State<Arc<StateService>>,
+) -> GeneralResponses<Vec<Categories>> {
+    let connection = &state.database;
+    let results = sqlx::query(
+        "SELECT id_category, category
+            FROM simple_store.category;",
+    )
+    .fetch_all(connection)
+    .await;
+
+    let contents = match results {
+        Ok(data) => data,
+        Err(err) => {
+            return GeneralResponses {
+                message: Some(format!("{} : {}","Failure".to_string(),err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("500".to_string()),
+            };
+        }
+    };
+
+
+    let mut content_results: Vec<Categories> = Vec::new();
+    for content in contents {
+        let id: i64 = content.try_get("id_category").unwrap_or(0);
+        let category: String = content.try_get("category").unwrap_or("N/F".to_string());
+        let data = Categories {
+            id_category: id,
+            category: category,
+        };
+        content_results.push(data);
+    }
+
+    GeneralResponses {
+        message: Some("Success".to_string()),
+        dataset: Some(content_results),
+        status: Some(0),
+        error: Some("200".to_string()),
+    }
 }

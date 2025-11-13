@@ -1,18 +1,14 @@
-use sqlx::Executor;
-use sqlx::{
-    MySql, Transaction, query,
-    types::chrono::{NaiveDate, Utc},
-};
-use std::sync::Arc;
+use sqlx::types::chrono::{NaiveDate, Utc};
+use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
 
-use crate::inner::structures::service_structure::{LoadProduct, RetailerBill, StateService};
+use crate::inner::structures::service_structure::{LoadProduct, StateService};
 
 pub async fn load_products(
     state: Arc<StateService>,
     loader: LoadProduct,
 ) -> Result<String, Box<dyn std::error::Error>> {
     println!("reaching Services");
-    //let connection = &state.database;
+
     //Insert Retailer Bill
     /*INSERT INTO simple_store.retailer_bill
     (id_retailer_bill, amount_billed, timestap_bill_retailer,
@@ -67,6 +63,7 @@ pub async fn load_products(
     let mut product_ids: Vec<u64> = Vec::with_capacity(product_list.len());
 
     for product in product_list {
+        let name = &product.product_name.unwrap_or("No Name".to_string());
         let has_discount = if product.has_discount.unwrap_or(false) {
             1u8
         } else {
@@ -84,7 +81,8 @@ pub async fn load_products(
         };
 
         let date_expiration = match NaiveDate::parse_from_str(
-            product.expiring_date
+            product
+                .expiring_date
                 .as_deref()
                 .unwrap_or(Utc::now().format("%Y-%m-%d").to_string().as_str()),
             "%Y-%m-%d",
@@ -95,11 +93,15 @@ pub async fn load_products(
             }
         };
 
-        let is_discontinued = if product.is_discontinued.unwrap_or(false){
+        let is_discontinued = if product.is_discontinued.unwrap_or(false) {
             1u8
         } else {
             0u8
         };
+
+        let random = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros().to_string();
+        let prefix : String = name.chars().take(3).collect();
+        let code = format!("{:?}-{:?}",prefix,random);
 
         let executioner_two = sqlx::query(
             "INSERT INTO simple_store.product
@@ -116,7 +118,7 @@ pub async fn load_products(
             is_discontinued)
             VALUES(?, ?, ?, ?, ?, ?, ?,?, ?,?,?);",
         )
-        .bind(&product.product_name.unwrap_or("No Name".to_string()))
+        .bind(&name)
         .bind(
             &product
                 .product_description
@@ -128,16 +130,14 @@ pub async fn load_products(
         .bind(is_available)
         .bind(date_expiration)
         .bind(&product.id_category.unwrap_or(0))
-        .bind("RandomCodeForProducts")
+        .bind(code)
         .bind(&product.product_stock_number.unwrap_or(0))
         .bind(is_discontinued)
         .execute(&mut *transaction)
         .await;
 
         let id_product = match executioner_two {
-            Ok(row) => {
-                row.last_insert_id()
-            },
+            Ok(row) => row.last_insert_id(),
             Err(err) => {
                 transaction.rollback().await?;
                 return Err(Box::new(err));
@@ -145,6 +145,23 @@ pub async fn load_products(
         };
         product_ids.push(id_product);
     }
+
+    for id_product in product_ids {
+
+        //Product Bill
+        //---------------
+        /*INSERT INTO simple_store.product_bill
+        (id_product, id_bill, buying_price)
+        VALUES(0, 0, 0); */
+
+        //Product to Store
+        //---------------
+        /*INSERT INTO simple_store.product_location
+        (id_product, id_store)
+        VALUES(0, 0); */
+    }
+
+    transaction.commit().await?;
 
     Ok(String::new())
 }
