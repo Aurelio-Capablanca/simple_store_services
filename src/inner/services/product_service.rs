@@ -1,7 +1,15 @@
 use sqlx::types::chrono::{NaiveDate, Utc};
-use std::{sync::Arc, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::inner::structures::service_structure::{LoadProduct, StateService};
+
+struct ProductIntermediary {
+    id: u64,
+    buy_price: f64,
+}
 
 pub async fn load_products(
     state: Arc<StateService>,
@@ -60,7 +68,7 @@ pub async fn load_products(
      unique_code, product_stock_number, is_discontinued)
     VALUES(0, '', '', 0, b'0', b'0', b'0', '', 0, '', 0, 0); */
     let product_list = loader.list_product;
-    let mut product_ids: Vec<u64> = Vec::with_capacity(product_list.len());
+    let mut product_intermediary : Vec<ProductIntermediary> = Vec::with_capacity(product_list.len());
 
     for product in product_list {
         let name = &product.product_name.unwrap_or("No Name".to_string());
@@ -99,9 +107,13 @@ pub async fn load_products(
             0u8
         };
 
-        let random = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros().to_string();
-        let prefix : String = name.chars().take(3).collect();
-        let code = format!("{:?}-{:?}",prefix,random);
+        let random = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_micros()
+            .to_string();
+        let prefix: String = name.chars().take(3).collect();
+        let code = format!("{:?}-{:?}", prefix, random);
 
         let executioner_two = sqlx::query(
             "INSERT INTO simple_store.product
@@ -143,10 +155,11 @@ pub async fn load_products(
                 return Err(Box::new(err));
             }
         };
-        product_ids.push(id_product);
+        let buy_price_product = product.buying_price.unwrap_or(0f64);        
+        product_intermediary.push(ProductIntermediary { id: id_product, buy_price: buy_price_product });
     }
 
-    for id_product in product_ids {
+    for id_product in product_intermediary {
 
         //Product Bill
         //---------------
