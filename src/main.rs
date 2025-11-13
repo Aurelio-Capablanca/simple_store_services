@@ -2,9 +2,7 @@ mod inner;
 mod outer;
 
 use std::sync::Arc;
-
-use axum::{Router, middleware, routing::get};
-
+use axum::{Router, middleware, routing::{get, post}};
 use tower_http::cors::CorsLayer;
 
 use crate::{
@@ -36,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let private_routes: Router<Arc<StateService>> = Router::new()
         .route("/test-access", get(product_controller::tester_secured))
         .route("/test-identity", get(product_controller::test_identities))
+        .route("/load-products", post(product_controller::load_products_controller))
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware));
 
     let application: Router = Router::new()

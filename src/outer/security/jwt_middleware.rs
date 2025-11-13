@@ -16,9 +16,7 @@ pub async fn jwt_middleware(
     let auth_headers = request
         .headers()
         .get("Authorization")
-        .and_then(|header| header.to_str().ok());
-
-    println!("{:?}", auth_headers);
+        .and_then(|header| header.to_str().ok());    
     let Some(auth_header) = auth_headers else {
         return Err(StatusCode::UNAUTHORIZED);
     };
@@ -27,12 +25,9 @@ pub async fn jwt_middleware(
         return Err(StatusCode::UNAUTHORIZED);
     }
     let secret_keys = b"791376c27ad90e5594339a004d26ef259e8faaba";
-    let decoded = DecodingKey::from_secret(secret_keys);
-    println!("Decode : {:?}", decoded);
-    let validation = Validation::new(jsonwebtoken::Algorithm::HS256);
-    println!("Validation : {:?}", validation);
-    let data_token = decode::<service_structure::ClaimsJWT>(token, &decoded, &validation);
-    println!("Data : {:?}", data_token);
+    let decoded = DecodingKey::from_secret(secret_keys);    
+    let validation = Validation::new(jsonwebtoken::Algorithm::HS256);    
+    let data_token = decode::<service_structure::ClaimsJWT>(token, &decoded, &validation);    
     match data_token {
         Ok(data) => {
             request.extensions_mut().insert(data.claims);

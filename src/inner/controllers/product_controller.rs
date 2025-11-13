@@ -1,16 +1,17 @@
 use std::{sync::Arc, vec};
 
-use crate::inner::structures::service_structure::{AuthenticatedUser, StateService};
-use axum::{
-    extract::State,
-    response::{Json},
-};
+use crate::inner::services::product_service;
+use crate::inner::structures::service_structure::{AuthenticatedUser, LoadProduct, StateService};
+use axum::{extract::State, response::Json};
+
+use axum::Json as DeserializationJson;
+
 use sqlx::{
     Row,
     types::chrono::{DateTime, Utc},
 };
 
-pub async fn tester_secured(State(state): State<Arc<StateService>>) ->  Json<Vec<String>> {
+pub async fn tester_secured(State(state): State<Arc<StateService>>) -> Json<Vec<String>> {
     let connection = &state.database;
     let user_rows = sqlx::query("Select * from users")
         .fetch_all(connection)
@@ -36,7 +37,7 @@ pub async fn tester_secured(State(state): State<Arc<StateService>>) ->  Json<Vec
     if fomatter.is_empty() {
         return Json(vec!["No Result Test".to_string()]);
     }
-    Json(fomatter)    
+    Json(fomatter)
 }
 
 pub async fn test_identities(
@@ -54,7 +55,7 @@ pub async fn test_identities(
     let id: u64 = user.try_get("id").unwrap();
     let name: &str = user.try_get("name").unwrap();
     formatted.push(format!("User {}: {}", id, name));
-
+    
     if formatted.is_empty() {
         Json(vec!["No Result".to_string()])
     } else {
@@ -64,4 +65,15 @@ pub async fn test_identities(
 
 pub async fn hello_world() -> &'static str {
     "Hello, world!"
+}
+
+//Action Controllers
+
+pub async fn load_products_controller(
+    State(state): State<Arc<StateService>>,
+    Json(products): DeserializationJson<LoadProduct>,
+) {
+    println!("Content Recieved : {:?}",products);
+    product_service::load_products(state, products).await;
+
 }

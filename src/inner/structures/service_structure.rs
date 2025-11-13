@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    MySqlPool,
-    types::chrono::{DateTime, Local, NaiveDateTime, Utc},
+    MySql, MySqlPool, Pool, types::chrono::{DateTime, Local, NaiveDateTime, Utc}
 };
 
 // System Required
 pub struct StateService {
-    pub database: MySqlPool,
-    //add current User found
+    pub database: Pool<MySql>
 }
 
 pub struct AuthenticatedUser {
@@ -24,34 +22,69 @@ pub struct ClaimsJWT {
 
 //Database Paired Structs
 #[derive(Debug, Clone)]
-struct RetailerBill {
-    id_retailer_bill: Option<i64>,
-    amount_billed: f64,
-    timestap_bill_retailer: DateTime<Local>,
-    id_store: i32,
-    id_retailer: i32,
+pub struct RetailerBill {
+    pub id_retailer_bill: Option<i64>,
+    pub amount_billed: f64,
+    pub timestap_bill_retailer: DateTime<Local>,
+    pub id_store: i32,
+    pub id_retailer: i32,
 }
 
-struct ProductBill{
-    id_product : i64,
-    id_bill: i64
+pub struct ProductBill{
+    pub id_product : i64,
+    pub id_bill: i64
 }
 
 #[derive(Debug, Clone)]
-struct Product {
-    id_product: Option<i32>,
-    product_name: String,
-    product_description: String,
-    product_price: f64,
-    has_discount: Option<bool>,
-    has_stock: Option<bool>,
-    is_available: Option<bool>,
-    expiring_date: Option<DateTime<Local>>,
-    id_category: i32,
-    buying_price: f64,
-    unique_code: String,
-    product_stock_number: i64,
-    is_discontinued : bool
+pub struct Product {
+    pub id_product: Option<i32>,
+    pub product_name: String,
+    pub product_description: String,
+    pub product_price: f64,
+    pub has_discount: Option<bool>,
+    pub has_stock: Option<bool>,
+    pub is_available: Option<bool>,
+    pub expiring_date: Option<DateTime<Local>>,
+    pub id_category: i32,
+    pub buying_price: f64,
+    pub unique_code: String,
+    pub product_stock_number: i64,
+    pub is_discontinued : bool
 }
 
 //Request Payloads
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProductRequest {
+    pub id_product: Option<i32>,
+    pub product_name: Option<String>,
+    pub product_description: Option<String>,
+    pub product_price: Option<f64>,
+    pub has_discount: Option<bool>,
+    pub has_stock: Option<bool>,
+    pub is_available: Option<bool>,
+    pub expiring_date: Option<String>,
+    pub id_category: Option<i32>,
+    pub buying_price: Option<f64>,
+    pub unique_code: Option<String>,
+    pub product_stock_number: Option<i64>,
+    pub is_discontinued : Option<bool>
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RetailerBillRequest {
+    pub id_retailer_bill: Option<i64>,
+    pub amount_billed: Option<f64>,
+    pub timestap_bill_retailer: Option<String>,
+    pub id_store: Option<i32>,
+    pub id_retailer: Option<i32>,
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LoadProduct{
+    pub retailer_bill : RetailerBillRequest,
+    pub list_product: Vec<ProductRequest>
+}
+
+
