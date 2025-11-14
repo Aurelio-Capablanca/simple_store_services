@@ -201,7 +201,34 @@ pub async fn get_product_controller(
     return GeneralResponses {
         message: Some("Success".to_string()),
         dataset: Some(content_results),
-        status: Some(0),
+        status: Some(1),
         error: Some("200".to_string()),
     };
+}
+
+
+pub async fn update_product(
+    State(state) : State<Arc<StateService>>,
+    Json(product) : Json<ProductRequest>
+)-> GeneralResponses<String> {
+    let response  = product_service::update_product(state, product).await;
+    let done = match response {
+        Ok(res) => res,
+        Err(err) => {
+            eprintln!("{}", err);
+             return GeneralResponses {
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("500".to_string()),
+            }
+        }
+    };
+
+   return GeneralResponses {
+        message: Some("Success".to_string()),
+        dataset: None,
+        status: Some(1),
+        error: Some("200".to_string()),
+    }
 }
