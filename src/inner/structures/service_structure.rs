@@ -1,7 +1,7 @@
 use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    MySql, MySqlPool, Pool, types::chrono::{DateTime, Local, NaiveDateTime, Utc}
+    MySql,  Pool
 };
 
 // System Required
@@ -36,38 +36,6 @@ pub struct ClaimsJWT {
     iat: u64,
 }
 
-//Database Paired Structs
-#[derive(Debug, Clone)]
-pub struct RetailerBill {
-    pub id_retailer_bill: Option<i64>,
-    pub amount_billed: f64,
-    pub timestap_bill_retailer: DateTime<Local>,
-    pub id_store: i32,
-    pub id_retailer: i32,
-}
-
-pub struct ProductBill{
-    pub id_product : i64,
-    pub id_bill: i64
-}
-
-#[derive(Debug, Clone)]
-pub struct Product {
-    pub id_product: Option<i32>,
-    pub product_name: String,
-    pub product_description: String,
-    pub product_price: f64,
-    pub has_discount: Option<bool>,
-    pub has_stock: Option<bool>,
-    pub is_available: Option<bool>,
-    pub expiring_date: Option<DateTime<Local>>,
-    pub id_category: i32,
-    pub buying_price: f64,
-    pub unique_code: String,
-    pub product_stock_number: i64,
-    pub is_discontinued : bool
-}
-
 //Request Payloads
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProductRequest {
@@ -86,6 +54,10 @@ pub struct ProductRequest {
     pub is_discontinued : Option<bool>
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Identifier{
+    pub id : u64
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RetailerBillRequest {

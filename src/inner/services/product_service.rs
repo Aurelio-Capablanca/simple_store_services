@@ -4,13 +4,14 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::inner::structures::service_structure::{LoadProduct, StateService};
+use crate::inner::structures::service_structure::{LoadProduct, ProductRequest, StateService};
 
 struct ProductIntermediary {
     id: u64,
     buy_price: f64,
 }
 
+// Save Product (as stated on diagrams)
 pub async fn load_products(
     state: Arc<StateService>,
     loader: LoadProduct,
@@ -23,6 +24,13 @@ pub async fn load_products(
     id_store, id_retailer)
     VALUES(0, 0, '', 0, 0); */
     let retailer_data = &loader.retailer_bill;
+    let mut total_bill_due: f64 = 0f64;
+    let product_list = loader.list_product;
+    let mut product_intermediary: Vec<ProductIntermediary> = Vec::with_capacity(product_list.len());
+
+    for product in &product_list {
+        total_bill_due += &product.buying_price.unwrap_or(0f64);
+    }
 
     let date_bill = match NaiveDate::parse_from_str(
         retailer_data
@@ -46,7 +54,7 @@ pub async fn load_products(
     ",
     )
     .bind(&retailer_data.id_store)
-    .execute(&mut *transaction)
+    .fetch_one(&mut *transaction)
     .await;
 
     match seek_store {
@@ -62,7 +70,7 @@ pub async fn load_products(
         (amount_billed, timestap_bill_retailer,id_store, id_retailer)
         VALUES(?, ?, ?, ?);",
     )
-    .bind(&retailer_data.amount_billed)
+    .bind(&total_bill_due)
     .bind(date_bill)
     .bind(&retailer_data.id_store)
     .bind(&retailer_data.id_retailer)
@@ -82,13 +90,9 @@ pub async fn load_products(
     has_discount, has_stock, is_available, expiring_date, id_category,
      unique_code, product_stock_number, is_discontinued)
     VALUES(0, '', '', 0, b'0', b'0', b'0', '', 0, '', 0, 0); */
-    let product_list = loader.list_product;
-    let mut product_intermediary: Vec<ProductIntermediary> = Vec::with_capacity(product_list.len());
-    let mut total_bill_due: f64 = 0f64;
 
     for product in product_list {
         let buy_price_product = product.buying_price.unwrap_or(0f64);
-        total_bill_due += &product.buying_price.unwrap_or(0f64);
         //if the Id is present don't make inserts, ignore and left over the object
         if let Some(id_product_or) = product.id_product {
             let id = match u64::try_from(id_product_or) {
@@ -105,7 +109,7 @@ pub async fn load_products(
             continue;
         }
 
-        let name = &product.product_name.unwrap_or("No Name".to_string());
+        let name = product.product_name.unwrap_or("No Name".to_string());
         let has_discount = if product.has_discount.unwrap_or(false) {
             1u8
         } else {
@@ -164,13 +168,14 @@ pub async fn load_products(
             is_discontinued)
             VALUES(?, ?, ?, ?, ?, ?, ?,?, ?,?,?);",
         )
-        .bind(&name)
+        .bind(&name) //product_name,
         .bind(
             &product
                 .product_description
                 .unwrap_or("no Description".to_string())
                 .to_string(),
-        )
+        ) //product_description
+        .bind(&product.product_price.unwrap_or(0f64))
         .bind(has_discount)
         .bind(has_stock)
         .bind(is_available)
@@ -253,7 +258,7 @@ pub async fn load_products(
     let executor_five = sqlx::query(
         "
     UPDATE simple_store.store
-    SET total_capital=?
+    SET total_capital= total_capital - ?
     WHERE id_store=?;
     ",
     )
@@ -271,5 +276,108 @@ pub async fn load_products(
 
     transaction.commit().await?;
 
-    Ok(String::new())
+    Ok("Success".to_string())
+}
+
+//Save those individually, don't wrestle up with this!
+pub async fn update_product(
+    database: Arc<StateService>,
+    product: ProductRequest,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let mut transaction = database.database.begin().await?;
+
+    let id = product.id_product.unwrap_or(0);
+    /*SELECT id_product FROM simple_store.product WHERE id_product = ?; */
+    let exist_p_q = sqlx::query("SELECT id_product FROM simple_store.product WHERE id_product = ?")
+        .bind(id)
+        .fetch_one(&mut *transaction)
+        .await;
+
+    match exist_p_q {
+        Ok(_) => {}
+        Err(err) => {
+            transaction.rollback().await?;
+            return Err(Box::new(err));
+        }
+    }
+
+    /*UPDATE simple_store.product
+    SET product_name='', product_description='', product_price=0, has_discount=b'0',
+    has_stock=b'0', is_available=b'0', expiring_date='', id_category=0,
+    unique_code='', product_stock_number=0, is_discontinued=0
+    WHERE id_product=0; */
+    let name = &product
+        .product_name
+        .unwrap_or("N/P".to_string())
+        .to_string();
+    let description = &product.product_description.unwrap_or("N/P".to_string());
+    let price = &product.product_price.unwrap_or(0f64);
+    let discount = if product.has_discount.unwrap_or(false) {
+        1u8
+    } else {
+        0u8
+    };
+    let has_stock = if product.has_stock.unwrap_or(false) {
+        1u8
+    } else {
+        0u8
+    };
+    let available = if product.is_available.unwrap_or(false) {
+        1u8
+    } else {
+        0u8
+    };
+    let date_expiration = match NaiveDate::parse_from_str(
+        product
+            .expiring_date
+            .as_deref()
+            .unwrap_or(Utc::now().format("%Y-%m-%d").to_string().as_str()),
+        "%Y-%m-%d",
+    ) {
+        Ok(date) => date.and_hms_opt(0, 0, 0).unwrap(),
+        Err(err) => {
+            return Err(Box::new(err));
+        }
+    };
+    let category = product.id_category.unwrap_or(0);
+    let stock = product.product_stock_number.unwrap_or(0);
+
+    let executor = sqlx::query(
+        "
+    UPDATE simple_store.product
+    SET product_name=?, 
+    product_description=?, 
+    product_price=?, 
+    has_discount=?,
+    has_stock=?, 
+    is_available=?,
+    expiring_date=?,
+    id_category=?,
+    product_stock_number=?
+    WHERE id_product=?;
+    ",
+    )
+    .bind(name)
+    .bind(description)
+    .bind(price)
+    .bind(discount)
+    .bind(has_stock)
+    .bind(available)
+    .bind(date_expiration)
+    .bind(category)
+    .bind(stock)
+    .execute(&mut *transaction)
+    .await;
+
+    match executor {
+        Ok(_) => {}
+        Err(err) => {
+            transaction.rollback().await?;
+            return Err(Box::new(err));
+        }
+    }
+
+    transaction.commit().await?;
+
+    Ok(true)
 }

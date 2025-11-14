@@ -11,7 +11,7 @@ use tower_http::cors::CorsLayer;
 use crate::{
     inner::{
         controllers::product_controller,
-        structures::service_structure::{self, StateService},
+        structures::service_structure::{self},
     },
     outer::{
         database::connection,
@@ -31,17 +31,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         axum::http::header::CONTENT_TYPE,
     ]);
 
-    let public_routes =
-        Router::new().route("/", get(product_controller::hello_world));
+    let public_routes = Router::new().route("/", get(product_controller::hello_world));
 
     let private_routes = Router::new()
         .route("/test-access", get(product_controller::tester_secured))
         .route("/test-identity", get(product_controller::test_identities))
         .route(
             "/load-products",
-            post(product_controller::load_products_controller),            
+            post(product_controller::load_products_controller),
         )
-        .route("/get-categories", get(product_controller::get_categories_controller))
+        .route(
+            "/get-categories",
+            get(product_controller::get_categories_controller),
+        )
+        .route(
+            "/get-one-product",
+            post(product_controller::get_product_controller),
+        )
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
         .with_state(state_application);
 

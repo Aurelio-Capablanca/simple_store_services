@@ -2,7 +2,8 @@ use std::{sync::Arc, vec};
 
 use crate::inner::services::product_service;
 use crate::inner::structures::service_structure::{
-    AuthenticatedUser, Categories, GeneralResponses, LoadProduct, StateService,
+    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest,
+    StateService,
 };
 use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
@@ -67,7 +68,7 @@ pub async fn test_identities(
 pub async fn hello_world() -> &'static str {
     "Hello, world!"
 }
-
+//-------------------------------------------------------------------------------------------------------------------------------
 //Action Controllers
 pub async fn load_products_controller(
     State(state): State<Arc<StateService>>,
@@ -85,7 +86,6 @@ pub async fn load_products_controller(
     Json(done)
 }
 
-#[axum::debug_handler]
 pub async fn get_categories_controller(
     State(state): State<Arc<StateService>>,
 ) -> GeneralResponses<Vec<Categories>> {
@@ -101,14 +101,13 @@ pub async fn get_categories_controller(
         Ok(data) => data,
         Err(err) => {
             return GeneralResponses {
-                message: Some(format!("{} : {}","Failure".to_string(),err)),
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
                 dataset: None,
                 status: Some(0),
                 error: Some("500".to_string()),
             };
         }
     };
-
 
     let mut content_results: Vec<Categories> = Vec::new();
     for content in contents {
@@ -127,4 +126,82 @@ pub async fn get_categories_controller(
         status: Some(0),
         error: Some("200".to_string()),
     }
+}
+
+
+pub async fn get_product_controller(
+    State(state): State<Arc<StateService>>,
+    Json(id): Json<Identifier>,
+) -> GeneralResponses<ProductRequest> {
+    let connection = &state.database;
+
+    let fetch = sqlx::query(
+        "
+    SELECT 
+        id_product, 
+        product_name, 
+        product_description, 
+        product_price, 
+        has_discount, 
+        has_stock, 
+        is_available, 
+        expiring_date, 
+        id_category, 
+        product_stock_number, 
+        is_discontinued
+    FROM simple_store.product
+    WHERE id_product = ?;
+    ",
+    )
+    .bind(id.id)
+    .fetch_one(connection)
+    .await;
+
+    let row = match fetch {
+        Ok(result) => result,
+        Err(err) => {
+            return GeneralResponses {
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("500".to_string()),
+            };
+        }
+    };    
+    let id = row.try_get("id_product").unwrap_or(0); //  id_product, 
+    let name = row.try_get("product_name").unwrap_or("N/A").to_string(); //  product_name, 
+    let description = row
+        .try_get("product_description")
+        .unwrap_or("N/A")
+        .to_string(); //  product_description, 
+    let price = row.try_get("product_price").unwrap_or(0f64); //  product_price, 
+    let discount = row.try_get("has_discount").unwrap_or(false); //  has_discount, 
+    let stock = row.try_get("has_stock").unwrap_or(false); //  has_stock, 
+    let available = row.try_get("is_available").unwrap_or(false); //  is_available, 
+    let expiration = row.try_get("expiring_date").unwrap_or("N/A").to_string(); //  expiring_date, 
+    let category = row.try_get("id_product").unwrap_or(0); //  id_category, 
+    let num_stock = row.try_get("product_stock_number").unwrap_or(0); //  product_stock_number, 
+    let discontinued = row.try_get("is_discontinued").unwrap_or(false); //  is_discontinued
+
+    let content_results = ProductRequest {
+        id_product: Some(id),
+        product_name: Some(name),
+        product_description: Some(description),
+        product_price: Some(price),
+        has_discount: Some(discount),
+        has_stock: Some(stock),
+        is_available: Some(available),
+        expiring_date: Some(expiration),
+        id_category: Some(category),
+        buying_price: None,
+        unique_code: None,
+        product_stock_number: Some(num_stock),
+        is_discontinued: Some(discontinued),
+    };
+    return GeneralResponses {
+        message: Some("Success".to_string()),
+        dataset: Some(content_results),
+        status: Some(0),
+        error: Some("200".to_string()),
+    };
 }
