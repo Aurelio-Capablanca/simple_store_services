@@ -50,7 +50,7 @@ pub async fn load_products(
     .await;
 
     match seek_store {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(err) => {
             return Err(Box::new(err));
         }
@@ -86,7 +86,7 @@ pub async fn load_products(
     let mut product_intermediary: Vec<ProductIntermediary> = Vec::with_capacity(product_list.len());
     let mut total_bill_due: f64 = 0f64;
 
-    for product in product_list {        
+    for product in product_list {
         let buy_price_product = product.buying_price.unwrap_or(0f64);
         total_bill_due += &product.buying_price.unwrap_or(0f64);
         //if the Id is present don't make inserts, ignore and left over the object
@@ -94,10 +94,14 @@ pub async fn load_products(
             let id = match u64::try_from(id_product_or) {
                 Ok(res) => res,
                 Err(err) => {
+                    transaction.rollback().await?;
                     return Err(Box::new(err));
                 }
             };
-            product_intermediary.push(ProductIntermediary { id: id, buy_price: buy_price_product });
+            product_intermediary.push(ProductIntermediary {
+                id: id,
+                buy_price: buy_price_product,
+            });
             continue;
         }
 
@@ -185,7 +189,7 @@ pub async fn load_products(
                 return Err(Box::new(err));
             }
         };
-        
+
         product_intermediary.push(ProductIntermediary {
             id: id_product,
             buy_price: buy_price_product,
@@ -257,6 +261,13 @@ pub async fn load_products(
     .bind(&retailer_data.id_store)
     .execute(&mut *transaction)
     .await;
+
+    match executor_five {
+        Ok(_) => {}
+        Err(err) => {
+            return Err(Box::new(err));
+        }
+    }
 
     transaction.commit().await?;
 
