@@ -3,11 +3,9 @@ mod outer;
 
 use axum::{
     Router, middleware,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
 };
-use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-
 use crate::{
     inner::{
         controllers::product_controller,
@@ -49,6 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             post(product_controller::get_product_controller),
         )
         .route("/update-products", put(product_controller::update_product))
+        .route("/delete-product", delete(product_controller::delete_products_controller))
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
         .with_state(state_application);
 

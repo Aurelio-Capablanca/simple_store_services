@@ -1,8 +1,8 @@
 use std::{sync::Arc, vec};
-
 use crate::inner::services::product_service;
 use crate::inner::structures::service_structure::{
-    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest, ProductResponse, StateService
+    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest,
+    ProductResponse, StateService,
 };
 use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
@@ -158,9 +158,9 @@ pub async fn get_product_controller(
 
     let row = match fetch {
         Ok(result) => {
-            println!("{:?}",result);
+            println!("{:?}", result);
             result
-        },
+        }
         Err(err) => {
             return GeneralResponses {
                 message: Some(format!("{} : {}", "Failure".to_string(), err)),
@@ -176,7 +176,7 @@ pub async fn get_product_controller(
         .try_get("product_description")
         .unwrap_or("N/A")
         .to_string(); //  product_description, 
-    let price : BigDecimal = row.try_get("product_price").unwrap(); //  product_price, 
+    let price: BigDecimal = row.try_get("product_price").unwrap(); //  product_price, 
     let discount = row.try_get("has_discount").unwrap_or(false); //  has_discount, 
     let stock = row.try_get("has_stock").unwrap_or(false); //  has_stock, 
     let available = row.try_get("is_available").unwrap_or(false); //  is_available, 
@@ -223,6 +223,32 @@ pub async fn update_product(
             };
         }
     };
+
+    return GeneralResponses {
+        message: Some("Success".to_string()),
+        dataset: None,
+        status: Some(1),
+        error: Some("200".to_string()),
+    };
+}
+
+pub async fn delete_products_controller(
+    State(state): State<Arc<StateService>>,
+    Json(identifier): Json<Identifier>,
+) -> GeneralResponses<String> {
+    let result = product_service::logically_hid_products(state, identifier).await;
+
+    match result {
+        Ok(_) => {}
+        Err(err) => {
+            return GeneralResponses {
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("200".to_string()),
+            };
+        }
+    }
 
     return GeneralResponses {
         message: Some("Success".to_string()),

@@ -4,7 +4,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use crate::inner::structures::service_structure::{LoadProduct, ProductRequest, StateService};
+use crate::inner::structures::service_structure::{
+    Identifier, LoadProduct, ProductRequest, StateService,
+};
 
 struct ProductIntermediary {
     id: u64,
@@ -366,11 +368,47 @@ pub async fn update_product(
     .bind(date_expiration)
     .bind(category)
     .bind(stock)
+    .bind(id)
     .execute(&mut *transaction)
     .await;
 
     match executor {
         Ok(_) => {}
+        Err(err) => {
+            transaction.rollback().await?;
+            return Err(Box::new(err));
+        }
+    }
+
+    transaction.commit().await?;
+
+    Ok(true)
+}
+
+pub async fn logically_hid_products(
+    state: Arc<StateService>,
+    identificator: Identifier,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let mut transaction = state.database.begin().await?;
+    
+    /*UPDATE simple_store.product
+    SET is_discontinued=0
+    WHERE id_product=?; */
+    let execution = sqlx::query(
+        "
+        UPDATE simple_store.product
+        SET is_discontinued=0
+        WHERE id_product=?;
+        "
+    )
+    .bind(identificator.id)
+    .execute(&mut *transaction)    
+    .await;
+
+    match execution {
+        Ok(_) => {
+            println!("Product deactivated!")
+        },
         Err(err) => {
             transaction.rollback().await?;
             return Err(Box::new(err));
