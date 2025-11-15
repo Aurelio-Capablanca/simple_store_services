@@ -157,8 +157,7 @@ pub async fn get_product_controller(
     .await;
 
     let row = match fetch {
-        Ok(result) => {
-            println!("{:?}", result);
+        Ok(result) => {           
             result
         }
         Err(err) => {

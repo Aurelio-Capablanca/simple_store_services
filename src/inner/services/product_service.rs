@@ -397,7 +397,7 @@ pub async fn logically_hid_products(
     let execution = sqlx::query(
         "
         UPDATE simple_store.product
-        SET is_discontinued=0
+        SET is_discontinued=1
         WHERE id_product=?;
         "
     )
