@@ -2,12 +2,12 @@ use std::{sync::Arc, vec};
 
 use crate::inner::services::product_service;
 use crate::inner::structures::service_structure::{
-    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest,
-    StateService,
+    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest, ProductResponse, StateService
 };
 use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
 
+use sqlx::types::BigDecimal;
 use sqlx::{
     Row,
     types::chrono::{DateTime, Utc},
@@ -128,11 +128,10 @@ pub async fn get_categories_controller(
     }
 }
 
-
 pub async fn get_product_controller(
     State(state): State<Arc<StateService>>,
     Json(id): Json<Identifier>,
-) -> GeneralResponses<ProductRequest> {
+) -> GeneralResponses<ProductResponse> {
     let connection = &state.database;
 
     let fetch = sqlx::query(
@@ -158,7 +157,10 @@ pub async fn get_product_controller(
     .await;
 
     let row = match fetch {
-        Ok(result) => result,
+        Ok(result) => {
+            println!("{:?}",result);
+            result
+        },
         Err(err) => {
             return GeneralResponses {
                 message: Some(format!("{} : {}", "Failure".to_string(), err)),
@@ -167,23 +169,23 @@ pub async fn get_product_controller(
                 error: Some("500".to_string()),
             };
         }
-    };    
+    };
     let id = row.try_get("id_product").unwrap_or(0); //  id_product, 
     let name = row.try_get("product_name").unwrap_or("N/A").to_string(); //  product_name, 
     let description = row
         .try_get("product_description")
         .unwrap_or("N/A")
         .to_string(); //  product_description, 
-    let price = row.try_get("product_price").unwrap_or(0f64); //  product_price, 
+    let price : BigDecimal = row.try_get("product_price").unwrap(); //  product_price, 
     let discount = row.try_get("has_discount").unwrap_or(false); //  has_discount, 
     let stock = row.try_get("has_stock").unwrap_or(false); //  has_stock, 
     let available = row.try_get("is_available").unwrap_or(false); //  is_available, 
     let expiration = row.try_get("expiring_date").unwrap_or("N/A").to_string(); //  expiring_date, 
-    let category = row.try_get("id_product").unwrap_or(0); //  id_category, 
-    let num_stock = row.try_get("product_stock_number").unwrap_or(0); //  product_stock_number, 
+    let category = row.try_get("id_category").unwrap_or(0); //  id_category, 
+    let num_stock = row.try_get("product_stock_number").unwrap(); //  product_stock_number, 
     let discontinued = row.try_get("is_discontinued").unwrap_or(false); //  is_discontinued
 
-    let content_results = ProductRequest {
+    let content_results = ProductResponse {
         id_product: Some(id),
         product_name: Some(name),
         product_description: Some(description),
@@ -193,8 +195,6 @@ pub async fn get_product_controller(
         is_available: Some(available),
         expiring_date: Some(expiration),
         id_category: Some(category),
-        buying_price: None,
-        unique_code: None,
         product_stock_number: Some(num_stock),
         is_discontinued: Some(discontinued),
     };
@@ -206,29 +206,28 @@ pub async fn get_product_controller(
     };
 }
 
-
 pub async fn update_product(
-    State(state) : State<Arc<StateService>>,
-    Json(product) : Json<ProductRequest>
-)-> GeneralResponses<String> {
-    let response  = product_service::update_product(state, product).await;
-    let done = match response {
+    State(state): State<Arc<StateService>>,
+    Json(product): Json<ProductRequest>,
+) -> GeneralResponses<String> {
+    let response = product_service::update_product(state, product).await;
+    match response {
         Ok(res) => res,
         Err(err) => {
             eprintln!("{}", err);
-             return GeneralResponses {
+            return GeneralResponses {
                 message: Some(format!("{} : {}", "Failure".to_string(), err)),
                 dataset: None,
                 status: Some(0),
                 error: Some("500".to_string()),
-            }
+            };
         }
     };
 
-   return GeneralResponses {
+    return GeneralResponses {
         message: Some("Success".to_string()),
         dataset: None,
         status: Some(1),
         error: Some("200".to_string()),
-    }
+    };
 }

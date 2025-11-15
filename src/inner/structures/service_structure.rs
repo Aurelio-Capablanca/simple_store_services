@@ -1,7 +1,7 @@
 use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    MySql,  Pool
+    MySql,  Pool, types::BigDecimal
 };
 
 // System Required
@@ -54,6 +54,7 @@ pub struct ProductRequest {
     pub is_discontinued : Option<bool>
 }
 
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Identifier{
     pub id : u64
@@ -82,4 +83,20 @@ pub struct LoadProduct{
 pub struct Categories{
     pub id_category: i64,
     pub category: String
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ProductResponse {
+    pub id_product: Option<i32>,
+    pub product_name: Option<String>,
+    pub product_description: Option<String>,
+    pub product_price: Option<BigDecimal>,
+    pub has_discount: Option<bool>,
+    pub has_stock: Option<bool>,
+    pub is_available: Option<bool>,
+    pub expiring_date: Option<String>,
+    pub id_category: Option<i32>,        
+    pub product_stock_number: Option<i64>,
+    pub is_discontinued : Option<bool>
 }
