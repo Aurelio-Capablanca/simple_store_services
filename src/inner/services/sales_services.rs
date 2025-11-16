@@ -1,4 +1,4 @@
-use crate::inner::structures::service_structure::{Sells, StateService};
+use crate::inner::structures::service_structure::{Identifier, Sells, StateService};
 use sqlx::Row;
 use std::sync::Arc;
 

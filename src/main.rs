@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/delete-product",
             delete(product_controller::delete_products_controller),
         )
-        .route("/get-product-price", get(product_controller::get_product_prices))
+        .route("/get-product-price", post(product_controller::get_product_prices))
         //Sales
         .route("/create-sale", post(sells_controller::do_sell_controller))        
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
