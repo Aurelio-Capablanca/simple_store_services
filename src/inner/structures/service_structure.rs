@@ -83,7 +83,7 @@ pub struct Sells {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProductSold {
     pub id_product: i64,
-    pub total_cart: f64,
+    pub total_cart: i64,
     pub sell_price: Option<f64>,
 }
 //--Sells

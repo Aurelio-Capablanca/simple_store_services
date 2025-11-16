@@ -1,4 +1,4 @@
-use crate::inner::structures::service_structure::{Identifier, Sells, StateService};
+use crate::inner::structures::service_structure::{ Sells, StateService};
 use sqlx::Row;
 use std::sync::Arc;
 
@@ -59,7 +59,7 @@ pub async fn do_sales(
     let mut total_sold: f64 = 0f64;
     //Product Sold
     for id_product in &sell.products {
-        total_sold += &id_product.total_cart;
+        total_sold += &id_product.sell_price.unwrap_or(0f64);
         /*INSERT INTO simple_store.products_sold
         (id_product, id_sell, sell_price, total_cart)
         VALUES(?, ?, ?, ?);*/
@@ -72,7 +72,7 @@ pub async fn do_sales(
         )
         .bind(&id_product.id_product)
         .bind(id_sell)
-        .bind(&id_product.sell_price)
+        .bind(&id_product.sell_price.unwrap_or(0f64))
         .bind(&id_product.total_cart)
         .execute(&mut *transaction)
         .await;
