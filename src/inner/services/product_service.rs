@@ -31,7 +31,7 @@ pub async fn load_products(
     let mut product_intermediary: Vec<ProductIntermediary> = Vec::with_capacity(product_list.len());
 
     for product in &product_list {
-        total_bill_due += &product.buying_price.unwrap_or(0f64);
+        total_bill_due += &product.buying_price.unwrap_or(0f64) * product.product_stock_number.unwrap_or(1) as f64;
     }
 
     let date_bill = match NaiveDate::parse_from_str(
@@ -254,10 +254,7 @@ pub async fn load_products(
         }
     }
 
-    //Update Total_capital at Store
-    /*UPDATE simple_store.store
-    SET store_number=0, store_location=0, total_capital=0, store_name=''
-    WHERE id_store=0; */
+    //Update Total_capital at Store    
     let executor_five = sqlx::query(
         "
     UPDATE simple_store.store

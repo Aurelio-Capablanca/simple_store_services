@@ -1,4 +1,4 @@
-use crate::inner::structures::service_structure::{ Sells, StateService};
+use crate::inner::structures::service_structure::{Sells, StateService};
 use sqlx::Row;
 use std::sync::Arc;
 
@@ -21,9 +21,7 @@ pub async fn do_sales(
     .await;
 
     let id_user: u64 = match fetch_seller {
-        Ok(result) => {
-            result.try_get("id").unwrap()
-        }
+        Ok(result) => result.try_get("id").unwrap(),
         Err(err) => {
             transaction.rollback().await?;
             return Err(Box::new(err));
@@ -47,15 +45,13 @@ pub async fn do_sales(
     .await;
 
     let id_sell: u64 = match executor_one {
-        Ok(result) => {
-            result.last_insert_id()
-        }
+        Ok(result) => result.last_insert_id(),
         Err(err) => {
             transaction.rollback().await?;
             return Err(Box::new(err));
         }
     };
-
+    
     let mut total_sold: f64 = 0f64;
     //Product Sold
     for id_product in &sell.products {
@@ -83,6 +79,29 @@ pub async fn do_sales(
                 return Err(Box::new(err));
             }
         }
+
+        //update product stock
+        let executor_products = sqlx::query(
+            "
+            UPDATE simple_store.product
+            SET product_stock_number= product_stock_number - ?
+            WHERE id_product=?;
+            ",
+        )
+        .bind(&id_product.total_cart)
+        .bind(&id_product.id_product)
+        .execute(&mut *transaction)
+        .await;
+
+        match executor_products {
+            Ok(_) => {},
+            Err(err) => {                
+                transaction.rollback().await?;
+                return Err(Box::new(err));
+            }
+            
+        }
+
     }
 
     //Update Total_Capital
@@ -96,13 +115,14 @@ pub async fn do_sales(
     WHERE id_store=?;
     ",
     )
+    .bind(total_sold)
     .bind(&sell.id_store)
     .execute(&mut *transaction)
     .await;
 
     match executor_three {
-        Ok(_) => {},
-        Err(err) => {
+        Ok(_) => {}
+        Err(err) => {            
             transaction.rollback().await?;
             return Err(Box::new(err));
         }
@@ -112,4 +132,3 @@ pub async fn do_sales(
 
     Ok(true)
 }
-
