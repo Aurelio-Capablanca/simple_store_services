@@ -1,14 +1,9 @@
 mod inner;
 mod outer;
 
-use axum::{
-    Router, middleware,
-    routing::{delete, get, post, put},
-};
-use tower_http::cors::CorsLayer;
 use crate::{
     inner::{
-        controllers::product_controller,
+        controllers::{product_controller, sells_controller},
         structures::service_structure::{self},
     },
     outer::{
@@ -16,6 +11,11 @@ use crate::{
         security::jwt_middleware::{self},
     },
 };
+use axum::{
+    Router, middleware,
+    routing::{delete, get, post, put},
+};
+use tower_http::cors::CorsLayer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let private_routes = Router::new()
         .route("/test-access", get(product_controller::tester_secured))
         .route("/test-identity", get(product_controller::test_identities))
+        //Products
         .route(
             "/load-products",
             post(product_controller::load_products_controller),
@@ -47,7 +48,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             post(product_controller::get_product_controller),
         )
         .route("/update-products", put(product_controller::update_product))
-        .route("/delete-product", delete(product_controller::delete_products_controller))
+        .route(
+            "/delete-product",
+            delete(product_controller::delete_products_controller),
+        )
+        //Sales
+        .route("/create-sale", post(sells_controller::do_sell_controller))
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
         .with_state(state_application);
 

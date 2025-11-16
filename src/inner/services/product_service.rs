@@ -137,6 +137,7 @@ pub async fn load_products(
         ) {
             Ok(date) => date.and_hms_opt(0, 0, 0).unwrap(),
             Err(err) => {
+                transaction.rollback().await?;
                 return Err(Box::new(err));
             }
         };
