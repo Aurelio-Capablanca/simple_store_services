@@ -1,10 +1,8 @@
 use std::sync::Arc;
-
 use axum::{Json, extract::State};
-
 use crate::inner::{services::sales_services, structures::service_structure::{AuthenticatedUser, GeneralResponses, Sells, StateService}};
 
-#[axum::debug_handler]
+
 pub async fn do_sell_controller(
     State(state): State<Arc<StateService>>,
     AuthenticatedUser{id: user_id} : AuthenticatedUser,
@@ -31,3 +29,6 @@ pub async fn do_sell_controller(
      status: Some(1), 
      error: None }
 }
+
+
+

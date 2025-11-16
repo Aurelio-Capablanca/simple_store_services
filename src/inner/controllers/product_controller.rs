@@ -1,11 +1,11 @@
-use std::{sync::Arc, vec};
 use crate::inner::services::product_service;
 use crate::inner::structures::service_structure::{
-    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductRequest,
-    ProductResponse, StateService,
+    AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductPrice,
+    ProductRequest, ProductResponse, StateService,
 };
 use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
+use std::{sync::Arc, vec};
 
 use sqlx::types::BigDecimal;
 use sqlx::{
@@ -157,9 +157,7 @@ pub async fn get_product_controller(
     .await;
 
     let row = match fetch {
-        Ok(result) => {           
-            result
-        }
+        Ok(result) => result,
         Err(err) => {
             return GeneralResponses {
                 message: Some(format!("{} : {}", "Failure".to_string(), err)),
@@ -244,7 +242,7 @@ pub async fn delete_products_controller(
                 message: Some(format!("{} : {}", "Failure".to_string(), err)),
                 dataset: None,
                 status: Some(0),
-                error: Some("200".to_string()),
+                error: Some("500".to_string()),
             };
         }
     }
@@ -252,6 +250,41 @@ pub async fn delete_products_controller(
     return GeneralResponses {
         message: Some("Success".to_string()),
         dataset: None,
+        status: Some(1),
+        error: Some("200".to_string()),
+    };
+}
+
+pub async fn get_product_prices(
+    State(state): State<Arc<StateService>>,
+    Json(identifier): Json<Identifier>,
+) -> GeneralResponses<ProductPrice> {
+    let connection = &state.database;
+
+    let fetcher = sqlx::query(
+        "
+        SELECT product_price FROM simple_store.product WHERE id_product = ?;
+    ",
+    )
+    .bind(&identifier.id)
+    .fetch_one(connection)
+    .await;
+
+    let price_set: BigDecimal = match fetcher {
+        Ok(row) => row.try_get("product_price").unwrap(),
+        Err(err) => {
+            return GeneralResponses {
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("500".to_string()),
+            };
+        }
+    };
+
+    return GeneralResponses {
+        message: Some("Success".to_string()),
+        dataset: Some(ProductPrice { price: price_set }),
         status: Some(1),
         error: Some("200".to_string()),
     };

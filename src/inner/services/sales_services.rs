@@ -1,4 +1,4 @@
-use crate::inner::structures::service_structure::{ProductSold, Sells, StateService};
+use crate::inner::structures::service_structure::{Sells, StateService};
 use sqlx::Row;
 use std::sync::Arc;
 
@@ -20,16 +20,15 @@ pub async fn do_sales(
     .fetch_one(&mut *transaction)
     .await;
 
-    let id_user: u64;
-    match fetch_seller {
+    let id_user: u64 = match fetch_seller {
         Ok(result) => {
-            id_user = result.try_get("id").unwrap();
+            result.try_get("id").unwrap()
         }
         Err(err) => {
             transaction.rollback().await?;
             return Err(Box::new(err));
         }
-    }
+    };
 
     //Insert a Sell
     /*INSERT INTO simple_store.sells
@@ -47,16 +46,15 @@ pub async fn do_sales(
     .execute(&mut *transaction)
     .await;
 
-    let id_sell: u64;
-    match executor_one {
+    let id_sell: u64 = match executor_one {
         Ok(result) => {
-            id_sell = result.last_insert_id();
+            result.last_insert_id()
         }
         Err(err) => {
             transaction.rollback().await?;
             return Err(Box::new(err));
         }
-    }
+    };
 
     let mut total_sold: f64 = 0f64;
     //Product Sold
@@ -114,3 +112,4 @@ pub async fn do_sales(
 
     Ok(true)
 }
+

@@ -77,18 +77,23 @@ pub struct LoadProduct {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Sells {
     pub id_store: i64,
-    pub products: Vec<ProductSold>
+    pub products: Vec<ProductSold>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ProductSold{    
+pub struct ProductSold {
     pub id_product: i64,
     pub total_cart: f64,
-    pub sell_price: Option<f64>
+    pub sell_price: Option<f64>,
 }
 //--Sells
 
 //Response Payloads
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProductPrice {
+    pub price: BigDecimal,
+}
 
 #[derive(Serialize)]
 pub struct Categories {
