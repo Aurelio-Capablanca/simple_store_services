@@ -56,6 +56,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         //Sales
         .route("/do-sale", post(sells_controller::do_sell_controller))        
         .route("/disable-sell", post(sells_controller::disable_sell))
+        .route("/get-sales", get(sells_controller::get_sells_products))
         .route_layer(middleware::from_fn(jwt_middleware::jwt_middleware))
         .with_state(state_application);
 

@@ -1,6 +1,6 @@
 use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
-use sqlx::{MySql, Pool, types::BigDecimal};
+use sqlx::{MySql, Pool, types::{BigDecimal}};
 
 // System Required
 pub struct StateService {
@@ -114,4 +114,15 @@ pub struct ProductResponse {
     pub id_category: Option<i32>,
     pub product_stock_number: Option<i64>,
     pub is_discontinued: Option<bool>,
+}
+
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SoldProducts {
+    pub id_sold: i64,
+    pub time_stamp :  String,
+    pub products: String,
+    pub total_sold: BigDecimal,
+    pub in_charge_name: String
 }
