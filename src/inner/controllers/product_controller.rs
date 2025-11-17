@@ -73,17 +73,28 @@ pub async fn hello_world() -> &'static str {
 pub async fn load_products_controller(
     State(state): State<Arc<StateService>>,
     Json(products): Json<LoadProduct>,
-) -> impl IntoResponse {
+) -> GeneralResponses<String> {
     println!("Content Recieved : {:?}", products);
     let response = product_service::load_products(state, products).await;
-    let done = match response {
-        Ok(res) => res,
+    match response {
+        Ok(res) => {
+            return GeneralResponses {
+                message: Some("Success!!!".to_string()),
+                dataset: Some(res),
+                status: Some(1),
+                error: Some("200".to_string()),
+            };
+        }
         Err(err) => {
             eprintln!("{}", err);
-            "".to_string()
+            return GeneralResponses {
+                message: Some(format!("{} : {}", "Failure".to_string(), err)),
+                dataset: None,
+                status: Some(0),
+                error: Some("500".to_string()),
+            };
         }
     };
-    Json(done)
 }
 
 pub async fn get_categories_controller(
@@ -123,7 +134,7 @@ pub async fn get_categories_controller(
     GeneralResponses {
         message: Some("Success".to_string()),
         dataset: Some(content_results),
-        status: Some(0),
+        status: Some(1),
         error: Some("200".to_string()),
     }
 }
