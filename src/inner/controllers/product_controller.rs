@@ -3,7 +3,6 @@ use crate::inner::structures::service_structure::{
     AuthenticatedUser, Categories, GeneralResponses, Identifier, LoadProduct, ProductPrice,
     ProductRequest, ProductResponse, StateService,
 };
-use axum::response::IntoResponse;
 use axum::{extract::State, response::Json};
 use std::{sync::Arc, vec};
 
